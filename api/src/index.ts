@@ -1,25 +1,36 @@
-import express from "express";
-import dotenv from "dotenv";
-import userRoutes from "./routes/user";
-import type { Application, Request, Response } from "express";
+import express, { json, urlencoded, Request } from "express";
+import productsRoutes from "./routes/products/index";
+import authRoutes from "./routes/auth/index";
+import ordersRoutes from "./routes/orders/index";
+import stripeRoutes from "./routes/stripe/index";
 
-dotenv.config();
+import serverless from "serverless-http";
 
-const app: Application = express();
-const port: number = parseInt(process.env.PORT || "3000", 10);
+const port = 3001;
+const app = express();
 
-// Middleware to parse JSON
-app.use(express.json());
+app.use(urlencoded({ extended: false }));
+app.use(
+  json({
+    verify: (req: Request, res, buf) => {
+      req.rawBody = buf;
+    },
+  })
+);
 
-// Routes
-app.use("/users", userRoutes);
-
-// Default route
-app.get("/", (req: Request, res: Response) => {
-  res.send("Welcome to my TypeScript API!");
+app.get("/", (req, res) => {
+  res.send("Hello World!");
 });
 
-// Start the server
-app.listen(port, () => {
-  console.log(`Server running on http://localhost:${port}`);
-});
+app.use("/products", productsRoutes);
+app.use("/auth", authRoutes);
+app.use("/orders", ordersRoutes);
+app.use("/stripe", stripeRoutes);
+
+if (process.env.NODE_ENV === "dev") {
+  app.listen(port, () => {
+    console.log(`Example app listening on port ${port}`);
+  });
+}
+
+export const handler = serverless(app);
